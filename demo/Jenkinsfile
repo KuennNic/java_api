@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = 'my-java-api-app'
+        DOCKER_TAG = 'latest'
+        GITHUB_REPO = 'https://github.com/KuennNic/java_api.git'
+        BRANCH = 'main'  
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    // Pull the code from GitHub repository
+                    git branch: "${BRANCH}", url: "${GITHUB_REPO}"
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    // Compile the Java application using Maven
+                    sh 'mvn clean install'
+                }
+            }
+        }
+
+        stage('Dockerize') {
+            steps {
+                script {
+                    // Build the Docker image for the Java application
+                    sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    // Run the Docker container with the built image
+                    sh 'docker run -d -p 8080:8080 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:${DOCKER_TAG}'
+                }
+            }
+        }
+
+        stage('Clean Up') {
+            steps {
+                script {
+                    // Optionally, remove the container after deployment
+                    sh 'docker stop ${DOCKER_IMAGE} && docker rm ${DOCKER_IMAGE}'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Clean up Docker images to free up space
+            sh 'docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true'
+        }
+    }
+}
