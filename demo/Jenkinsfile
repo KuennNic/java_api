@@ -19,11 +19,13 @@ pipeline {
         }
 
         stage('Build') {
-            steps {
-                script {
-                    // Compile the Java application using Maven
-                    sh 'mvn clean install'
+            agent {
+                docker {
+                    image 'maven:3.8.8-openjdk-21'
                 }
+            }
+            steps {
+                sh 'mvn clean install'
             }
         }
 
